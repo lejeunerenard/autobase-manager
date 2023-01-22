@@ -1,0 +1,28 @@
+{
+  "name": "corestore-full-replicate",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "tape tests/**/*.js",
+    "lint": "eslint **/*.js"
+  },
+  "keywords": [],
+  "author": "Sean Zellmer <sean@lejeunerenard.com> (http://lejeunerenard.com/)",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.32.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-n": "^15.6.1",
+    "eslint-plugin-promise": "^6.1.1",
+    "random-access-memory": "^6.1.0",
+    "tape": "^5.6.3"
+  },
+  "dependencies": {
+    "compact-encoding": "^2.11.0",
+    "corestore": "^6.4.1",
+    "protomux": "^3.4.1"
+  }
+}
