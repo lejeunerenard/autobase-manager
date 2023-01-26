@@ -1,35 +1,109 @@
 import test from 'tape'
 import RAM from 'random-access-memory'
 import Corestore from 'corestore'
-import emitNewCores from '../index.js'
+import Autobase from 'autobase'
+import { AutobaseManager } from '../index.js'
+import { pipeline } from 'streamx'
+
+async function create (storage) {
+  const store = new Corestore(storage || RAM)
+  await store.ready()
+
+  const core = store.get({ name: 'my-input' })
+  const coreOut = store.get({ name: 'my-output' })
+  const base = new Autobase({
+    inputs: [core],
+    localInput: core,
+    outputs: [coreOut],
+    localOutput: coreOut,
+    autostart: true,
+    eagerUpdate: true
+  })
+
+  await base.ready()
+
+  return [store, base]
+}
 
 test('full replicate', (t) => {
-  t.test('emits message when a core is added', async (t) => {
+  t.test('adds localInputs between autobases', async (t) => {
     t.plan(1)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
 
-    const storeA = new Corestore(RAM)
-    const storeB = new Corestore(RAM)
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
 
-    await storeA.ready()
-    await storeB.ready()
+    const managerA = new AutobaseManager(streamA.noiseStream, baseA,
+      () => true, storeA.get.bind(storeA))
+    const managerB = new AutobaseManager(streamB.noiseStream, baseB,
+      () => true, storeB.get.bind(storeB))
 
-    let streamA
-    const streamAProm = new Promise((resolve, reject) => {
-      streamA = emitNewCores(storeA, (key) => {
-        t.is(key, expectedKey.toString('hex'))
-        resolve()
-      }, true)
-    })
-    const streamB = emitNewCores(storeB, (key) => {
-      t.fail('self announced')
-    }, false)
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
 
-    streamA.pipe(streamB).pipe(streamA)
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+    t.deepEqual(baseB.inputs.map((core) => core.key),
+      [baseB.localInput, baseA.localInput].map((core) => core.key),
+      'baseB got baseA\'s localinput')
+  })
 
-    const core = await storeB.get({ name: 'beep' })
-    await core.ready()
-    const expectedKey = core.key
+  t.test('adds inputs not own by either autobase but known by one', async (t) => {
+    t.plan(1)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
 
-    await streamAProm
+    const falseCore = await storeA.get(Buffer.from('deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef', 'hex'))
+    await baseA.addInput(falseCore)
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+
+    const managerA = new AutobaseManager(streamA.noiseStream, baseA,
+      () => true, storeA.get.bind(storeA))
+    const managerB = new AutobaseManager(streamB.noiseStream, baseB,
+      () => true, storeB.get.bind(storeB))
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+    t.deepEqual(baseB.inputs.map((core) => core.key),
+      [baseB.localInput, baseA.localInput, falseCore].map((core) => core.key),
+      'baseB got baseA\'s localInput & the unowned ocer')
+  })
+
+  t.test('adds outputs not own by either autobase but known by one', async (t) => {
+    t.plan(1)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
+
+    const falseCore = await storeA.get(Buffer.from('deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef', 'hex'))
+    await baseA.addOutput(falseCore)
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+
+    const managerA = new AutobaseManager(streamA.noiseStream, baseA,
+      () => true, storeA.get.bind(storeA))
+    const managerB = new AutobaseManager(streamB.noiseStream, baseB,
+      () => true, storeB.get.bind(storeB))
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+    t.deepEqual(baseB.outputs.map((core) => core.key),
+      [baseB.localOutput, baseA.localOutput, falseCore].map((core) => core.key),
+      'baseB got baseA\'s localOutput & the unowned core')
   })
 })

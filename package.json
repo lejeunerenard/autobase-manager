@@ -21,6 +21,7 @@
     "tape": "^5.6.3"
   },
   "dependencies": {
+    "autobase": "^1.0.0-alpha.8",
     "compact-encoding": "^2.11.0",
     "corestore": "^6.4.1",
     "protomux": "^3.4.1"
