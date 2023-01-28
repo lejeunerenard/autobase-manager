@@ -106,4 +106,46 @@ test('full replicate', (t) => {
       [baseB.localOutput, baseA.localOutput, falseCore].map((core) => core.key),
       'baseB got baseA\'s localOutput & the unowned core')
   })
+
+  t.test('filters input & output cores w/ allow function', async (t) => {
+    t.plan(2)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
+
+    const falseCore = await storeA.get(Buffer.from('deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef', 'hex'))
+    const falseCore2 = await storeA.get(Buffer.from('feebdaedfeebdaedfeebdaedfeebdaedfeebdaedfeebdaedfeebdaedfeebdaed', 'hex'))
+    await baseA.addInput(falseCore)
+    await baseB.addOutput(falseCore2)
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+
+    const denyList = [
+      falseCore.key.toString('hex'),
+      falseCore2.key.toString('hex')
+    ]
+
+    function allow (key) {
+      return denyList.indexOf(key) === -1
+    }
+
+    const managerA = new AutobaseManager(streamA.noiseStream, baseA, allow,
+      storeA.get.bind(storeA))
+    const managerB = new AutobaseManager(streamB.noiseStream, baseB, allow,
+      storeB.get.bind(storeB))
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+    t.deepEqual(baseB.inputs.map((core) => core.key),
+      [baseB.localInput, baseA.localInput].map((core) => core.key),
+      'baseB got baseA\'s inputs & not denied cores')
+    t.deepEqual(baseA.outputs.map((core) => core.key),
+      [baseA.localOutput, baseB.localOutput].map((core) => core.key),
+      'baseA got baseB\'s outputs & not denied cores')
+  })
 })
