@@ -34,10 +34,12 @@ test('full replicate', (t) => {
     const streamA = storeA.replicate(true)
     const streamB = storeB.replicate(false)
 
-    const managerA = new AutobaseManager(streamA.noiseStream, baseA,
-      () => true, storeA.get.bind(storeA))
-    const managerB = new AutobaseManager(streamB.noiseStream, baseB,
-      () => true, storeB.get.bind(storeB))
+    const managerA = new AutobaseManager(baseA, () => true,
+      storeA.get.bind(storeA))
+    managerA.attachStream(streamA.noiseStream)
+    const managerB = new AutobaseManager(baseB, () => true,
+      storeB.get.bind(storeB))
+    managerB.attachStream(streamB.noiseStream)
 
     pipeline([
       streamA,
@@ -62,10 +64,12 @@ test('full replicate', (t) => {
     const streamA = storeA.replicate(true)
     const streamB = storeB.replicate(false)
 
-    const managerA = new AutobaseManager(streamA.noiseStream, baseA,
-      () => true, storeA.get.bind(storeA))
-    const managerB = new AutobaseManager(streamB.noiseStream, baseB,
-      () => true, storeB.get.bind(storeB))
+    const managerA = new AutobaseManager(baseA, () => true,
+      storeA.get.bind(storeA))
+    managerA.attachStream(streamA.noiseStream)
+    const managerB = new AutobaseManager(baseB, () => true,
+      storeB.get.bind(storeB))
+    managerB.attachStream(streamB.noiseStream)
 
     pipeline([
       streamA,
@@ -90,10 +94,12 @@ test('full replicate', (t) => {
     const streamA = storeA.replicate(true)
     const streamB = storeB.replicate(false)
 
-    const managerA = new AutobaseManager(streamA.noiseStream, baseA,
-      () => true, storeA.get.bind(storeA))
-    const managerB = new AutobaseManager(streamB.noiseStream, baseB,
-      () => true, storeB.get.bind(storeB))
+    const managerA = new AutobaseManager(baseA, () => true,
+      storeA.get.bind(storeA))
+    managerA.attachStream(streamA.noiseStream)
+    const managerB = new AutobaseManager(baseB, () => true,
+      storeB.get.bind(storeB))
+    managerB.attachStream(streamB.noiseStream)
 
     pipeline([
       streamA,
@@ -105,6 +111,46 @@ test('full replicate', (t) => {
     t.deepEqual(baseB.outputs.map((core) => core.key),
       [baseB.localOutput, baseA.localOutput, falseCore].map((core) => core.key),
       'baseB got baseA\'s localOutput & the unowned core')
+  })
+
+  t.test('3way replicates', async (t) => {
+    t.plan(1)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
+    const [storeC, baseC] = await create()
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+    const streamAforC = storeA.replicate(true)
+    const streamC = storeC.replicate(false)
+
+    const managerA = new AutobaseManager(baseA, () => true,
+      storeA.get.bind(storeA))
+    managerA.attachStream(streamA.noiseStream)
+    managerA.attachStream(streamAforC.noiseStream)
+    const managerB = new AutobaseManager(baseB, () => true,
+      storeB.get.bind(storeB))
+    managerB.attachStream(streamB.noiseStream)
+    const managerC = new AutobaseManager(baseC, () => true,
+      storeC.get.bind(storeB))
+    managerC.attachStream(streamC.noiseStream)
+
+    pipeline([
+      streamAforC,
+      streamC,
+      streamAforC
+    ])
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+    t.deepEqual(baseB.outputs.map((core) => core.key),
+      [baseB.localOutput, baseA.localOutput, baseC.localOutput].map((core) => core.key),
+      'baseB got baseC\'s localOutput w/o direct stream')
   })
 
   t.test('filters input & output cores w/ allow function', async (t) => {
@@ -129,10 +175,10 @@ test('full replicate', (t) => {
       return denyList.indexOf(key) === -1
     }
 
-    const managerA = new AutobaseManager(streamA.noiseStream, baseA, allow,
-      storeA.get.bind(storeA))
-    const managerB = new AutobaseManager(streamB.noiseStream, baseB, allow,
-      storeB.get.bind(storeB))
+    const managerA = new AutobaseManager(baseA, allow, storeA.get.bind(storeA))
+    managerA.attachStream(streamA.noiseStream)
+    const managerB = new AutobaseManager(baseB, allow, storeB.get.bind(storeB))
+    managerB.attachStream(streamB.noiseStream)
 
     pipeline([
       streamA,
