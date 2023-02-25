@@ -1,6 +1,6 @@
 # Autobase Manager
 
-A simple "replicate everything" approach to synchronizing `autobase`s' `inputs`
+A simple "replicate everything" module to synchronizing `autobase`s' `inputs`
 and `outputs` via a frame stream (most likely `hyperswarm`).
 
 ## Usage
