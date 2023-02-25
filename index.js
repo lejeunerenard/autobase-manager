@@ -83,7 +83,7 @@ export class AutobaseManager {
     const streamRecord = { stream, inputAnnouncer, outputAnnouncer }
     this._streams.push(streamRecord)
     stream.once('close', () => {
-      this._streams.slice(this._streams.indexOf(streamRecord), 1)
+      this._streams.splice(this._streams.indexOf(streamRecord), 1)
     })
 
     if (this.base.localInput || this.base.inputs || this.base.outputs || this.base.localOutput) this.announce(streamRecord)

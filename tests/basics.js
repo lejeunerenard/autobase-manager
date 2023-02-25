@@ -196,4 +196,39 @@ test('full replicate', (t) => {
       [baseA.localOutput, baseB.localOutput].map((core) => core.key),
       'baseA got baseB\'s outputs & not denied cores')
   })
+
+  t.test('removes stream on close', async (t) => {
+    t.plan(4)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+
+    const managerA = new AutobaseManager(baseA, () => true,
+      storeA.get.bind(storeA), storeA.storage)
+    managerA.attachStream(streamA.noiseStream)
+    const managerB = new AutobaseManager(baseB, () => true,
+      storeB.get.bind(storeB), storeB.storage)
+    managerB.attachStream(streamB.noiseStream)
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+
+    t.equal(managerA._streams[0].stream, streamA.noiseStream, 'adds stream')
+    t.equal(managerB._streams[0].stream, streamB.noiseStream, 'adds stream')
+
+    streamA.destroy()
+    streamB.destroy()
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+
+    t.deepEqual(managerA._streams, [], 'removes all streams')
+    t.deepEqual(managerB._streams, [], 'removes all streams')
+  })
 })
