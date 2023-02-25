@@ -15,15 +15,27 @@ export class AutobaseManager {
     this._outputKeys = new Set()
     this._streams = []
 
-    if (this.base.localInput) {
-      this._addKeys([this.base.localInput.key.toString('hex')], 'input')
-    }
-    if (this.base.localOutput) {
-      this._addKeys([this.base.localOutput.key.toString('hex')], 'output')
-    }
-
     // Load storage
-    this._ready = this.readStorageKeys()
+    this._ready = Promise.resolve().then(() => {
+      const coresToLoad = []
+
+      // Load local cores first
+      if (this.base.localInput) {
+        coresToLoad.push(this._addKeys([this.base.localInput.key.toString('hex')], 'input'))
+      }
+      if (this.base.localOutput) {
+        coresToLoad.push(this._addKeys([this.base.localOutput.key.toString('hex')], 'output'))
+      }
+
+      // Load storage cores
+      coresToLoad.push(this.readStorageKeys())
+
+      return Promise.all(coresToLoad)
+    })
+      .then(() => Promise.all([
+        this._addKeys(this._inputKeys, 'input'),
+        this._addKeys(this._outputKeys, 'output')
+      ]))
   }
 
   ready () {
@@ -115,6 +127,12 @@ export class AutobaseManager {
       if (destination === 'output') {
         this._outputKeys.add(core.key.toString('hex'))
 
+        // Skip local output lest we get a 'Batch is out-of-date' error
+        if (this.base.localOutput.key === core.key) {
+          console.log('found local output, continuing')
+          continue
+        }
+
         // Update output to ensure up to date before adding
         // Get a 'Batch is out-of-date.' error otherwise
         if (this.base.started) await this.base.view.update()
@@ -143,16 +161,19 @@ export class AutobaseManager {
     const store = this._getStorage(file)
     return new Promise((resolve, reject) => {
       store.stat(async (err, stat) => {
-        if (err) return
+        if (err) {
+          resolve()
+          return
+        }
 
         const len = stat.size
         for (let start = 0; start < len; start += 32) {
-          await new Promise((resolve2, reject) => {
+          await new Promise((resolve, reject) => {
             store.read(start, 32, function (err, buf) {
               if (err) throw err
 
               output.add(buf.toString('hex'))
-              resolve2()
+              resolve()
             })
           })
         }
