@@ -1,5 +1,5 @@
 {
-  "name": "corestore-full-replicate",
+  "name": "@lejeunerenard/autobase-manager",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
