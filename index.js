@@ -128,7 +128,7 @@ export class AutobaseManager {
         this._outputKeys.add(b4a.toString(core.key, 'hex'))
 
         // Skip local output lest we get a 'Batch is out-of-date' error
-        if (this.base.localOutput.key === core.key) {
+        if (this.base.localOutput && this.base.localOutput.key === core.key) {
           console.log('found local output, continuing')
           continue
         }
