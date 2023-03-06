@@ -21,10 +21,10 @@ export class AutobaseManager {
 
       // Load local cores first
       if (this.base.localInput) {
-        coresToLoad.push(this._addKeys([this.base.localInput.key.toString('hex')], 'input'))
+        coresToLoad.push(this._addKeys([b4a.toString(this.base.localInput.key, 'hex')], 'input'))
       }
       if (this.base.localOutput) {
-        coresToLoad.push(this._addKeys([this.base.localOutput.key.toString('hex')], 'output'))
+        coresToLoad.push(this._addKeys([b4a.toString(this.base.localOutput.key, 'hex')], 'output'))
       }
 
       // Load storage cores
@@ -92,14 +92,14 @@ export class AutobaseManager {
   async announce (stream) {
     await this.ready()
 
-    const keys = this.base.inputs.map((core) => core.key.toString('hex'))
+    const keys = this.base.inputs.map((core) => b4a.toString(core.key, 'hex'))
     if (keys.length) {
       // console.log('[' + this.base.localOutput.key.toString('hex').slice(-6) +
       //       '] announce keys', keys.map((key) => key.slice(-6)))
       stream.inputAnnouncer.send(keys)
     }
 
-    const outputKeys = this.base.outputs.map((core) => core.key.toString('hex'))
+    const outputKeys = this.base.outputs.map((core) => b4a.toString(core.key, 'hex'))
     if (outputKeys.length) {
       // console.log('[' + this.base.localOutput.key.toString('hex').slice(-6) +
       //       '] announce outputKeys', outputKeys.map((key) => key.slice(-6)))
@@ -125,7 +125,7 @@ export class AutobaseManager {
     // Add to the corresponding place in autobase
     for (const core of cores) {
       if (destination === 'output') {
-        this._outputKeys.add(core.key.toString('hex'))
+        this._outputKeys.add(b4a.toString(core.key, 'hex'))
 
         // Skip local output lest we get a 'Batch is out-of-date' error
         if (this.base.localOutput.key === core.key) {
@@ -139,7 +139,7 @@ export class AutobaseManager {
 
         await this.base.addOutput(core)
       } else {
-        this._inputKeys.add(core.key.toString('hex'))
+        this._inputKeys.add(b4a.toString(core.key, 'hex'))
         await this.base.addInput(core)
       }
     }
