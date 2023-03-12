@@ -231,4 +231,106 @@ test('full replicate', (t) => {
     t.deepEqual(managerA._streams, [], 'removes all streams')
     t.deepEqual(managerB._streams, [], 'removes all streams')
   })
+
+  t.test('manager w/ different ids dont collide', async (t) => {
+    const ID1 = 'id1'
+    const ID2 = 'id2'
+
+    const [storeA, baseA1] = await create()
+    const [storeB, baseB1] = await create()
+
+    const coreA2 = storeA.get({ name: 'my-input2' })
+    const coreOutA2 = storeA.get({ name: 'my-output2' })
+    const baseA2 = new Autobase({
+      inputs: [coreA2],
+      localInput: coreA2,
+      outputs: [coreOutA2],
+      localOutput: coreOutA2,
+      autostart: true,
+      eagerUpdate: true
+    })
+    await baseA2.ready()
+
+    const coreB2 = storeB.get({ name: 'my-input2' })
+    const coreOutB2 = storeB.get({ name: 'my-output2' })
+    const baseB2 = new Autobase({
+      inputs: [coreB2],
+      localInput: coreB2,
+      outputs: [coreOutB2],
+      localOutput: coreOutB2,
+      autostart: true,
+      eagerUpdate: true
+    })
+    await baseB2.ready()
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+
+    const managerA1 = new AutobaseManager(baseA1, () => true,
+      storeA.get.bind(storeA), storeA.storage, { id: ID1 })
+    managerA1.attachStream(streamA.noiseStream)
+    const managerA2 = new AutobaseManager(baseA2, () => true,
+      storeA.get.bind(storeA), storeA.storage, { id: ID2 })
+    managerA2.attachStream(streamA.noiseStream)
+
+    const managerB1 = new AutobaseManager(baseB1, () => true,
+      storeB.get.bind(storeB), storeB.storage, { id: ID1 })
+    managerB1.attachStream(streamB.noiseStream)
+    const managerB2 = new AutobaseManager(baseB2, () => true,
+      storeB.get.bind(storeB), storeB.storage, { id: ID2 })
+    managerB2.attachStream(streamB.noiseStream)
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await new Promise((resolve) => { setTimeout(resolve, 100) })
+
+    t.deepEqual(baseB1.inputs.map((core) => core.key),
+      [baseB1.localInput, baseA1.localInput].map((core) => core.key),
+      'baseB1 got baseA1\'s inputs')
+    t.deepEqual(baseA2.outputs.map((core) => core.key),
+      [baseA2.localOutput, baseB2.localOutput].map((core) => core.key),
+      'baseA2 got baseB2\'s outputs')
+    t.notDeepEqual(baseA1.inputs.map((core) => core.key),
+      baseA2.inputs.map((core) => core.key),
+      'baseA1 did not sync baseA2\'s inputs')
+    t.notDeepEqual(baseB1.outputs.map((core) => core.key),
+      baseB2.outputs.map((core) => core.key),
+      'baseB1 did not sync baseB2\'s outputs')
+    t.end()
+  })
+
+  t.test('manager w/ same ids throws error', async (t) => {
+    const ID1 = 'id1'
+
+    const [storeA, baseA1] = await create()
+
+    const coreA2 = storeA.get({ name: 'my-input2' })
+    const coreOutA2 = storeA.get({ name: 'my-output2' })
+    const baseA2 = new Autobase({
+      inputs: [coreA2],
+      localInput: coreA2,
+      outputs: [coreOutA2],
+      localOutput: coreOutA2,
+      autostart: true,
+      eagerUpdate: true
+    })
+    await baseA2.ready()
+
+    const streamA = storeA.replicate(true)
+
+    const managerA1 = new AutobaseManager(baseA1, () => true,
+      storeA.get.bind(storeA), storeA.storage, { id: ID1 })
+    managerA1.attachStream(streamA.noiseStream)
+    const managerA2 = new AutobaseManager(baseA2, () => true,
+      storeA.get.bind(storeA), storeA.storage, { id: ID1 })
+    t.throws(() => managerA2.attachStream(streamA.noiseStream),
+      /Attempted to attach to a stream with either duplicate or already closed channel/,
+      'throws error about colliding ids')
+
+    t.end()
+  })
 })

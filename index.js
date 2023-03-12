@@ -5,11 +5,16 @@ import Hypercore from 'hypercore'
 import { difference } from './utils/set-operations.js'
 
 export class AutobaseManager {
-  constructor (base, allow, get, storage) {
+  constructor (base, allow, get, storage, opts = {}) {
     this.base = base
     this.allow = allow
     this.get = get
     this.storage = Hypercore.defaultStorage(storage)
+    this.id = opts.id || b4a.from('main')
+    // Ensure id is a buffer for protomux
+    if (typeof this.id === 'string') {
+      this.id = b4a.from(this.id)
+    }
 
     this._inputKeys = new Set()
     this._outputKeys = new Set()
@@ -47,7 +52,13 @@ export class AutobaseManager {
 
     const mux = Protomux.from(stream)
 
-    const channel = mux.createChannel({ protocol: 'autobase-manager' })
+    const channel = mux.createChannel({
+      protocol: 'autobase-manager',
+      id: this.id
+    })
+    if (channel === null) {
+      throw Error('Attempted to attach to a stream with either duplicate or already closed channel. Maybe select a different `id`?')
+    }
     channel.open()
 
     const inputAnnouncer = channel.addMessage({
@@ -146,8 +157,8 @@ export class AutobaseManager {
   }
 
   _getStorage (file) {
-    const MANAGER_DIR = 'autobase-manager/'
-    return this.storage(MANAGER_DIR + file)
+    const MANAGER_DIR = ['autobase-manager', this.id.toString()].join('/')
+    return this.storage(MANAGER_DIR + '/' + file)
   }
 
   readStorageKeys () {

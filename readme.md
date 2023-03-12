@@ -19,7 +19,9 @@ const manager = new AutobaseManager(
   // get(key) function to get a hypercore given a key
   corestore.get.bind(corestore),
   // Storage for managing autobase keys
-  corestore.storage)
+  corestore.storage,
+  // Options
+  { id: 'unique-id-per-autobase' })
 
 // Wait until everything is loaded
 await manager.ready()
@@ -35,7 +37,7 @@ swarm.on('connection', (conn) => {
 
 ## API
 
-`const manager = new Autobase(base, allow, get, storage)`
+`const manager = new Autobase(base, allow, get, storage, opts = {})`
 
 Create a new manager given an autobase, allow function, a means of getting a
 core and a storage for persisting keys distributed to load on start.
@@ -54,6 +56,13 @@ core and a storage for persisting keys distributed to load on start.
 - `storage` is a directory where you want to store managed keys or alternatively
   you own [abstract-random-access](https://github.com/random-access-storage/abstract-random-access)
   instance. For example, if using a Corestore, `corestore.storage`.
+- `opts`
+  Options include:
+  ```
+  {
+    id: Buffer.from('unique-id-per-autobase') // A unique id per set of autobases. If passed a string, it will be automatically converted into a buffer.
+  }
+  ```
 
 `await manager.ready()`
 
