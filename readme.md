@@ -42,18 +42,18 @@ swarm.on('connection', (conn) => {
 Create a new manager given an autobase, allow function, a means of getting a
 core and a storage for persisting keys distributed to load on start.
 
-- `base` an Autobase to be managed
-- `allow` a function which returns a boolean for whether to add a core or not.
+- `base` : an Autobase to be managed
+- `allow` : a function which returns a boolean for whether to add a core or not.
   The function is passed the following arguments: `allow(key, coreType, 
   channel)`:
-  - `key` is the key as a hexadecimal string of a core announced by a peer to be
+  - `key` : the key as a hexadecimal string of a core announced by a peer to be
   replicated
-  - `coreType` is either `input` or `output` representing whether the core is to
+  - `coreType` : either `input` or `output` representing whether the core is to
   be added as an input or output on the Autobase.
-  - `channel` is the underlying `Protomux` channel in case more advanced logic
+  - `channel` : the underlying `Protomux` channel in case more advanced logic
   is needed.
-- `get(key)` is a function for retrieving a Hypercore when given a key.
-- `storage` is a directory where you want to store managed keys or alternatively
+- `get(key)` : a function for retrieving a Hypercore when given a key.
+- `storage` : a directory where you want to store managed keys or alternatively
   you own [abstract-random-access](https://github.com/random-access-storage/abstract-random-access)
   instance. For example, if using a Corestore, `corestore.storage`.
 - `opts`
