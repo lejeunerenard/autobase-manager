@@ -56,8 +56,9 @@ core and a storage for persisting keys distributed to load on start.
 - `storage` : a directory where you want to store managed keys or alternatively
   you own [abstract-random-access](https://github.com/random-access-storage/abstract-random-access)
   instance. For example, if using a Corestore, `corestore.storage`.
-- `opts`
+- `opts`  
   Options include:
+
   ```
   {
     id: Buffer.from('unique-id-per-autobase') // A unique id per set of autobases. If passed a string, it will be automatically converted into a buffer.
