@@ -4,6 +4,8 @@ import b4a from 'b4a'
 import Hypercore from 'hypercore'
 import { difference } from './utils/set-operations.js'
 
+const DEBUG = false
+
 export class AutobaseManager {
   constructor (base, allow, get, storage, opts = {}) {
     this.base = base
@@ -66,9 +68,17 @@ export class AutobaseManager {
       async onmessage (msgs, session) {
         const allowedKeys = msgs.filter((msg) => self.allow(msg, 'input', session))
         if (allowedKeys.length) {
+          DEBUG && console.log('[' +
+            b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+            '] inputs allowedKeys ', allowedKeys.map((key) => key.slice(-6)))
+
           // Check if any are new
           const newKeys = difference(allowedKeys, self._inputKeys)
           if (newKeys.size > 0) {
+            DEBUG && console.log('[' +
+              b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+              '] new inputs', [...newKeys].map((key) => key.slice(-6)))
+
             await self._addKeys(newKeys, 'input')
             await self.updateStorageKeys()
           }
@@ -81,9 +91,15 @@ export class AutobaseManager {
       async onmessage (msgs, session) {
         const allowedKeys = msgs.filter((msg) => self.allow(msg, 'output', session))
         if (allowedKeys.length) {
+          DEBUG && console.log('[' +
+            b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+            '] outputs allowedKeys ', allowedKeys.map((key) => key.slice(-6)))
           // Check if any are new
           const newKeys = difference(allowedKeys, self._outputKeys)
           if (newKeys.size > 0) {
+            DEBUG && console.log('[' +
+              b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+              '] new outputs ', [...newKeys].map((key) => key.slice(-6)))
             await self._addKeys(newKeys, 'output')
             await self.updateStorageKeys()
           }
@@ -105,15 +121,17 @@ export class AutobaseManager {
 
     const keys = this.base.inputs.map((core) => b4a.toString(core.key, 'hex'))
     if (keys.length) {
-      // console.log('[' + this.base.localOutput.key.toString('hex').slice(-6) +
-      //       '] announce keys', keys.map((key) => key.slice(-6)))
+      DEBUG && console.log('[' +
+        b4a.toString(this.base.localOutput.key, 'hex').slice(-6) +
+        '] announce keys', keys.map((key) => key.slice(-6)))
       stream.inputAnnouncer.send(keys)
     }
 
     const outputKeys = this.base.outputs.map((core) => b4a.toString(core.key, 'hex'))
     if (outputKeys.length) {
-      // console.log('[' + this.base.localOutput.key.toString('hex').slice(-6) +
-      //       '] announce outputKeys', outputKeys.map((key) => key.slice(-6)))
+      DEBUG && console.log('[' +
+        b4a.toString(this.base.localOutput.key, 'hex').slice(-6) +
+        '] announce outputKeys', outputKeys.map((key) => key.slice(-6)))
       stream.outputAnnouncer.send(outputKeys)
     }
   }
@@ -140,7 +158,7 @@ export class AutobaseManager {
 
         // Skip local output lest we get a 'Batch is out-of-date' error
         if (this.base.localOutput && this.base.localOutput.key === core.key) {
-          console.log('found local output, continuing')
+          DEBUG && console.log('found local output, continuing')
           continue
         }
 
@@ -207,7 +225,6 @@ export class AutobaseManager {
     let i = 0
     for (const data of input) {
       const start = i * 32
-      // console.log('write data', data)
       await new Promise((resolve, reject) => {
         store.write(start, b4a.from(data, 'hex'), (err) => {
           if (err) return reject(err)
