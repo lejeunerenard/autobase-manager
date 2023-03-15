@@ -3,11 +3,13 @@ import c from 'compact-encoding'
 import b4a from 'b4a'
 import Hypercore from 'hypercore'
 import { difference } from './utils/set-operations.js'
+import { EventEmitter } from 'events'
 
 const DEBUG = false
 
-export class AutobaseManager {
+export class AutobaseManager extends EventEmitter {
   constructor (base, allow, get, storage, opts = {}) {
+    super()
     this.base = base
     this.allow = allow
     this.get = get
@@ -171,6 +173,7 @@ export class AutobaseManager {
         this._inputKeys.add(b4a.toString(core.key, 'hex'))
         await this.base.addInput(core)
       }
+      this.emit('core-added', core, destination)
     }
   }
 
