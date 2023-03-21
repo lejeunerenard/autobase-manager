@@ -197,6 +197,78 @@ test('full replicate', (t) => {
       'baseA got baseB\'s outputs & not denied cores')
   })
 
+  t.test('filters input & output cores w/ async allow function', async (t) => {
+    t.plan(2)
+    const [storeA, baseA] = await create()
+    const [storeB, baseB] = await create()
+
+    const falseCore = await storeA.get(Buffer.from('deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef', 'hex'))
+    const falseCore2 = await storeA.get(Buffer.from('feebdaedfeebdaedfeebdaedfeebdaedfeebdaedfeebdaedfeebdaedfeebdaed', 'hex'))
+    await baseA.addInput(falseCore)
+    await baseB.addOutput(falseCore2)
+
+    const streamA = storeA.replicate(true)
+    const streamB = storeB.replicate(false)
+
+    const denyList = [
+      falseCore.key.toString('hex'),
+      falseCore2.key.toString('hex')
+    ]
+
+    async function allow (key) {
+      await new Promise((resolve) => setTimeout(resolve, 100))
+      return denyList.indexOf(key) === -1
+    }
+
+    const managerA = new AutobaseManager(baseA, allow, storeA.get.bind(storeA),
+      storeA.storage)
+    managerA.attachStream(streamA.noiseStream)
+    const managerB = new AutobaseManager(baseB, allow, storeB.get.bind(storeB),
+      storeB.storage)
+    managerB.attachStream(streamB.noiseStream)
+
+    const debounceMS = 10
+    const allCoresAdded = Promise.all([
+      new Promise((resolve, reject) => {
+        const addedCores = { input: 0, output: 0 }
+        let debounceCoreAdded = null
+        managerA.on('core-added', (core, destination) => {
+          addedCores[destination]++
+          if (addedCores.input > 0 && addedCores.output > 0) {
+            clearTimeout(debounceCoreAdded)
+            debounceCoreAdded = setTimeout(resolve, debounceMS)
+          }
+        })
+      }),
+      new Promise((resolve, reject) => {
+        const addedCores = { input: 0, output: 0 }
+        let debounceCoreAdded = null
+        managerB.on('core-added', (core, destination) => {
+          addedCores[destination]++
+          if (addedCores.input > 0 && addedCores.output > 0) {
+            clearTimeout(debounceCoreAdded)
+            debounceCoreAdded = setTimeout(resolve, debounceMS)
+          }
+        })
+      })
+    ])
+
+    pipeline([
+      streamA,
+      streamB,
+      streamA
+    ])
+
+    await allCoresAdded
+
+    t.deepEqual(baseB.inputs.map((core) => core.key),
+      [baseB.localInput, baseA.localInput].map((core) => core.key),
+      'baseB got baseA\'s inputs & not denied cores')
+    t.deepEqual(baseA.outputs.map((core) => core.key),
+      [baseA.localOutput, baseB.localOutput].map((core) => core.key),
+      'baseA got baseB\'s outputs & not denied cores')
+  })
+
   t.test('removes stream on close', async (t) => {
     t.plan(4)
     const [storeA, baseA] = await create()

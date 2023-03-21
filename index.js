@@ -68,7 +68,8 @@ export class AutobaseManager extends EventEmitter {
     const inputAnnouncer = channel.addMessage({
       encoding: c.array(c.string),
       async onmessage (msgs, session) {
-        const allowedKeys = msgs.filter((msg) => self.allow(msg, 'input', session))
+        const allowedKeysComputed = await Promise.all(msgs.map((msg) => self.allow(msg, 'input', session)))
+        const allowedKeys = msgs.filter((msg, i) => allowedKeysComputed[i])
         if (allowedKeys.length) {
           DEBUG && console.log('[' +
             b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
@@ -91,7 +92,8 @@ export class AutobaseManager extends EventEmitter {
     const outputAnnouncer = channel.addMessage({
       encoding: c.array(c.string),
       async onmessage (msgs, session) {
-        const allowedKeys = msgs.filter((msg) => self.allow(msg, 'output', session))
+        const allowedKeysComputed = await Promise.all(msgs.map((msg) => self.allow(msg, 'output', session)))
+        const allowedKeys = msgs.filter((msg, i) => allowedKeysComputed[i])
         if (allowedKeys.length) {
           DEBUG && console.log('[' +
             b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
