@@ -72,14 +72,14 @@ export class AutobaseManager extends EventEmitter {
         const allowedKeys = msgs.filter((msg, i) => allowedKeysComputed[i])
         if (allowedKeys.length) {
           DEBUG && console.log('[' +
-            b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+            (self.base.localOutput ? b4a.toString(self.base.localOutput.key, 'hex').slice(-6) : 'N/A') +
             '] inputs allowedKeys ', allowedKeys.map((key) => key.slice(-6)))
 
           // Check if any are new
           const newKeys = difference(allowedKeys, self._inputKeys)
           if (newKeys.size > 0) {
             DEBUG && console.log('[' +
-              b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+            (self.base.localOutput ? b4a.toString(self.base.localOutput.key, 'hex').slice(-6) : 'N/A') +
               '] new inputs', [...newKeys].map((key) => key.slice(-6)))
 
             await self._addKeys(newKeys, 'input')
@@ -96,13 +96,13 @@ export class AutobaseManager extends EventEmitter {
         const allowedKeys = msgs.filter((msg, i) => allowedKeysComputed[i])
         if (allowedKeys.length) {
           DEBUG && console.log('[' +
-            b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+            (self.base.localOutput ? b4a.toString(self.base.localOutput.key, 'hex').slice(-6) : 'N/A') +
             '] outputs allowedKeys ', allowedKeys.map((key) => key.slice(-6)))
           // Check if any are new
           const newKeys = difference(allowedKeys, self._outputKeys)
           if (newKeys.size > 0) {
             DEBUG && console.log('[' +
-              b4a.toString(self.base.localOutput.key, 'hex').slice(-6) +
+            (self.base.localOutput ? b4a.toString(self.base.localOutput.key, 'hex').slice(-6) : 'N/A') +
               '] new outputs ', [...newKeys].map((key) => key.slice(-6)))
             await self._addKeys(newKeys, 'output')
             await self.updateStorageKeys()
@@ -126,7 +126,7 @@ export class AutobaseManager extends EventEmitter {
     const keys = this.base.inputs.map((core) => b4a.toString(core.key, 'hex'))
     if (keys.length) {
       DEBUG && console.log('[' +
-        b4a.toString(this.base.localOutput.key, 'hex').slice(-6) +
+        (this.base.localOutput ? b4a.toString(this.base.localOutput.key, 'hex').slice(-6) : 'N/A') +
         '] announce keys', keys.map((key) => key.slice(-6)))
       stream.inputAnnouncer.send(keys)
     }
@@ -134,7 +134,7 @@ export class AutobaseManager extends EventEmitter {
     const outputKeys = this.base.outputs.map((core) => b4a.toString(core.key, 'hex'))
     if (outputKeys.length) {
       DEBUG && console.log('[' +
-        b4a.toString(this.base.localOutput.key, 'hex').slice(-6) +
+        (this.base.localOutput ? b4a.toString(this.base.localOutput.key, 'hex').slice(-6) : 'N/A') +
         '] announce outputKeys', outputKeys.map((key) => key.slice(-6)))
       stream.outputAnnouncer.send(outputKeys)
     }
