@@ -54,7 +54,8 @@ core and a storage for persisting keys distributed to load on start.
   is needed.
 - `get(key)` : a function for retrieving a Hypercore when given a key.
 - `storage` : a directory where you want to store managed keys or alternatively
-  you own [abstract-random-access](https://github.com/random-access-storage/abstract-random-access)
+  you own
+  [random-access-storage](https://github.com/random-access-storage/random-access-storage)
   instance. For example, if using a Corestore, `corestore.storage`.
 - `opts`  
   Options include:
