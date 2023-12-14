@@ -25,7 +25,7 @@ export class AutobaseManager extends EventEmitter {
     this._streams = []
 
     // Load storage
-    this._ready = Promise.resolve().then(() => {
+    this._ready = this.base.ready().then(() => {
       const coresToLoad = []
 
       // Load local cores first

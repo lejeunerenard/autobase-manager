@@ -25,6 +25,34 @@ async function create (storage) {
   return [store, base]
 }
 
+test('basic usage', (t) => {
+  t.test('manager.ready()', (t) => {
+    t.test('calls base.ready', async (t) => {
+      const store = new Corestore(RAM)
+      await store.ready()
+
+      const core = store.get({ name: 'my-input' })
+      const coreOut = store.get({ name: 'my-output' })
+      const base = new Autobase({
+        inputs: [core],
+        localInput: core,
+        outputs: [coreOut],
+        localOutput: coreOut,
+        autostart: true,
+        eagerUpdate: true
+      })
+
+      const manager = new AutobaseManager(base, () => true,
+        store.get.bind(store), store.storage)
+      await manager.ready()
+
+      t.ok(core.key, 'input key is defined')
+      t.ok(coreOut.key, 'outupt key is defined')
+      t.end()
+    })
+  })
+})
+
 test('full replicate', (t) => {
   t.test('adds localInputs between autobases', async (t) => {
     t.plan(1)
