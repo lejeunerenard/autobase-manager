@@ -1,6 +1,6 @@
 {
   "name": "@lejeunerenard/autobase-manager",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A simple \"replicate everything\" module to synchronize autobase inputs and outputs via a stream.",
   "main": "index.js",
   "type": "module",
