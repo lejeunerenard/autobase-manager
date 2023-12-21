@@ -180,8 +180,8 @@ export class AutobaseManager extends EventEmitter {
   }
 
   _getStorage (file) {
-    const MANAGER_DIR = ['autobase-manager', this.id.toString()].join('/')
-    return this.storage(MANAGER_DIR + '/' + file)
+    const MANAGER_DIR = ['autobase-manager', this.id.toString(), file].join('/')
+    return this.storage(MANAGER_DIR)
   }
 
   readStorageKeys () {
